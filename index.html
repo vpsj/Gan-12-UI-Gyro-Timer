@@ -120,29 +120,7 @@
 
     <div id="timer">0:00.000</div>
   </div>
-
-  <!-- Debug helper: safely expose TwistyPlayer for console inspection -->
-  <script type="module">
-    import { TwistyPlayer } from "./assets/index-BYzuRI8i.js";
-
-    window.addEventListener("load", () => {
-      const tryExpose = () => {
-        try {
-          if (TwistyPlayer?.instances?.length) {
-            window.twistyPlayer = TwistyPlayer.instances[0];
-            console.log("TwistyPlayer exposed globally as window.twistyPlayer");
-          } else {
-            console.warn("TwistyPlayer not yet initialized, retrying...");
-            setTimeout(tryExpose, 500);
-          }
-        } catch (err) {
-          console.error("Failed to expose TwistyPlayer:", err);
-        }
-      };
-      tryExpose();
-    });
-  </script>
-
 </body>
 
 </html>
+
