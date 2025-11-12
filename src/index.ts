@@ -35,7 +35,17 @@ const twistyPlayer = new TwistyPlayer({
   tempoScale: 5,
 });
 $('#cube').append(twistyPlayer);
-(window as any).twistyPlayer = twistyPlayer;
+
+// ✅ Force global scope even inside Vite’s module sandbox
+if (typeof window !== "undefined") {
+  // @ts-ignore
+  (globalThis as any).twistyPlayer = twistyPlayer;
+  // Also mirror to window for browsers that use iframe scopes
+  // @ts-ignore
+  window.twistyPlayer = twistyPlayer;
+  console.log("✅ TwistyPlayer exposed globally");
+}
+
 
 // --- GLOBALS ---
 let conn: GanCubeConnection | null = null;
