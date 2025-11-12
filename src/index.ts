@@ -36,15 +36,36 @@ const twistyPlayer = new TwistyPlayer({
 });
 
 $('#cube').append(twistyPlayer);
+$('#cube').append(twistyPlayer);
+
+// Wait for TwistyPlayer to fully initialize before logging
 (async () => {
-  const vantages = await twistyPlayer.experimentalCurrentVantages();
+  // Wait for a valid vantage
+  let vantages = [];
+  for (let i = 0; i < 20; i++) { // up to ~2 seconds total
+    vantages = await twistyPlayer.experimentalCurrentVantages();
+    if (vantages.length > 0) break;
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  if (!vantages.length) {
+    console.error("No vantages available — TwistyPlayer scene not initialized.");
+    return;
+  }
+
   const vantage = vantages[0];
   const scene = await vantage.scene.scene();
 
   console.group("Twisty Scene Children");
-  scene.children.forEach((child, i) => console.log(i, child.name || child.type));
+  scene.children.forEach((child, i) => {
+    console.log(i, child.name || child.type);
+  });
   console.groupEnd();
+
+  console.log("✅ TwistyPlayer scene is ready.");
 })();
+
+
 
 
 
