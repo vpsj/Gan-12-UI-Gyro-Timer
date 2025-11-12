@@ -37,14 +37,17 @@ const twistyPlayer = new TwistyPlayer({
 
 $('#cube').append(twistyPlayer);
 
-// ✅ Wait until the TwistyPlayer finishes setting up
-setTimeout(() => {
-  // Expose to global scope (will always work, even under Vite ESM)
-  (window as any).__twistyPlayerRef = twistyPlayer;
-  console.log("✅ TwistyPlayer is now available as window.__twistyPlayerRef");
-  console.log("You can now run:");
-  console.log("  (await __twistyPlayerRef.experimentalCurrentVantages())[0].scene.scene()");
-}, 2000);
+// 🧭 Dump the scene structure once TwistyPlayer is ready
+(async () => {
+  const vantages = await twistyPlayer.experimentalCurrentVantages();
+  const vantage = vantages[0];
+  const scene = await vantage.scene.scene();
+
+  console.group("TwistyPlayer Scene Children");
+  scene.children.forEach((child, i) => console.log(i, child.name || child.type));
+  console.groupEnd();
+})();
+
 
 
 
