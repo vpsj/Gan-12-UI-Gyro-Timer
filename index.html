@@ -4,17 +4,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gan Cube Timer</title>
+  <title>Gan 12 UI Gyro Timer</title>
 
-  <!-- ✅ Use Vite’s built build outputs when hosted -->
-  <script type="module" crossorigin src="./assets/index.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index.css">
+  <!--  Correct built file references from /assets folder -->
+  <script type="module" crossorigin src="./assets/index-BYzuRI8i.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DX22opEO.css">
 
   <style>
+    /*  Modern Dark Theme */
     body {
       margin: 0;
-      background-color: #121212;
-      color: #fff;
+      background: radial-gradient(circle at top, #181818, #0e0e0e);
+      color: #ffffff;
       font-family: "Segoe UI", Roboto, sans-serif;
       display: flex;
       flex-direction: column;
@@ -22,47 +23,89 @@
       justify-content: center;
       height: 100vh;
       overflow: hidden;
+      user-select: none;
     }
 
+    /*  Help text */
     .help {
       text-align: center;
-      font-size: 1rem;
-      color: #bbb;
-      margin-bottom: 20px;
+      font-size: 1.1rem;
+      color: #aaa;
+      margin-bottom: 25px;
+      max-width: 90%;
+      line-height: 1.4;
     }
 
+    /*  Cube Container */
     #cube {
-      width: 320px;
-      height: 320px;
-      margin: 0 auto 25px auto;
+      width: 340px;
+      height: 340px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
+    /*  Control Buttons */
     .controls {
       display: flex;
       justify-content: center;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 14px;
+      margin-bottom: 25px;
     }
 
     button {
-      background-color: #333;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 18px;
-      color: #fff;
+      background-color: #292929;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 10px 20px;
+      color: #f1f1f1;
       font-size: 1rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     }
 
     button:hover {
-      background-color: #555;
+      background-color: #3a3a3a;
+      transform: translateY(-1px);
     }
 
+    button:active {
+      background-color: #222;
+      transform: translateY(0);
+    }
+
+    /*  Timer Display */
     #timer {
-      font-size: 2.5rem;
+      font-size: 2.8rem;
       font-weight: bold;
+      letter-spacing: 1px;
       margin-top: 10px;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    /*  Responsive for smaller screens */
+    @media (max-width: 600px) {
+      #cube {
+        width: 280px;
+        height: 280px;
+      }
+
+      .controls {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      button {
+        width: 160px;
+      }
+
+      #timer {
+        font-size: 2rem;
+      }
     }
   </style>
 </head>
@@ -71,7 +114,7 @@
   <div id="app">
 
     <div class="help">
-      Scramble cube to any state, then press SPACE or tap the cube to start/stop the timer.
+      Scramble the cube to any state, then press <strong>SPACE</strong> or tap the cube to start/stop the timer.
     </div>
 
     <div id="cube"></div>
@@ -85,4 +128,5 @@
     <div id="timer">0:00.000</div>
   </div>
 </body>
+
 </html>
