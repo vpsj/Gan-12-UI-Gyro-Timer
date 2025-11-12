@@ -37,17 +37,14 @@ const twistyPlayer = new TwistyPlayer({
 
 $('#cube').append(twistyPlayer);
 
-// ✅ Expose TwistyPlayer globally *after* DOM fully loads
-window.addEventListener("load", () => {
-  try {
-    // Make sure it’s really visible in the browser console
-    (window as any).twistyPlayer = twistyPlayer;
-    (globalThis as any).twistyPlayer = twistyPlayer;
-    console.log("✅ TwistyPlayer exposed globally (post-load)");
-  } catch (err) {
-    console.error("❌ Failed to expose TwistyPlayer globally:", err);
-  }
-});
+// ✅ Wait until the TwistyPlayer finishes setting up
+setTimeout(() => {
+  // Expose to global scope (will always work, even under Vite ESM)
+  (window as any).__twistyPlayerRef = twistyPlayer;
+  console.log("✅ TwistyPlayer is now available as window.__twistyPlayerRef");
+  console.log("You can now run:");
+  console.log("  (await __twistyPlayerRef.experimentalCurrentVantages())[0].scene.scene()");
+}, 2000);
 
 
 
