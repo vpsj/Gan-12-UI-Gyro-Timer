@@ -1,126 +1,123 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gan 12 UI Gyro Timer</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gan 12 UI Gyro Timer</title>
+    <!-- Vite automatically injects JS and CSS -->
+    <script type="module" src="/src/index.ts"></script>
 
-  <!-- Correct built file references -->
-  <script type="module" crossorigin src="./assets/index-BYzuRI8i.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DX22opEO.css">
+    <style>
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top, #181818, #0e0e0e);
+        color: #ffffff;
+        font-family: "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        overflow: hidden;
+        user-select: none;
+      }
 
-  <style>
-    body {
-      margin: 0;
-      background: radial-gradient(circle at top, #181818, #0e0e0e);
-      color: #ffffff;
-      font-family: "Segoe UI", Roboto, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-      user-select: none;
-    }
+      .help {
+        text-align: center;
+        font-size: 1.1rem;
+        color: #aaa;
+        margin-bottom: 25px;
+        max-width: 90%;
+        line-height: 1.4;
+      }
 
-    .help {
-      text-align: center;
-      font-size: 1.1rem;
-      color: #aaa;
-      margin-bottom: 25px;
-      max-width: 90%;
-      line-height: 1.4;
-    }
-
-    #cube {
-      width: 340px;
-      height: 340px;
-      margin: 0 auto 30px auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .controls {
-      display: flex;
-      justify-content: center;
-      gap: 14px;
-      margin-bottom: 25px;
-    }
-
-    button {
-      background-color: #292929;
-      border: 1px solid #444;
-      border-radius: 10px;
-      padding: 10px 20px;
-      color: #f1f1f1;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-    }
-
-    button:hover {
-      background-color: #3a3a3a;
-      transform: translateY(-1px);
-    }
-
-    button:active {
-      background-color: #222;
-      transform: translateY(0);
-    }
-
-    #timer {
-      font-size: 2.8rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-      margin-top: 10px;
-      color: #ffffff;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-    }
-
-    @media (max-width: 600px) {
       #cube {
-        width: 280px;
-        height: 280px;
+        width: 340px;
+        height: 340px;
+        margin: 0 auto 30px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .controls {
-        flex-direction: column;
-        gap: 10px;
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        margin-bottom: 25px;
       }
 
       button {
-        width: 160px;
+        background-color: #292929;
+        border: 1px solid #444;
+        border-radius: 10px;
+        padding: 10px 20px;
+        color: #f1f1f1;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+      }
+
+      button:hover {
+        background-color: #3a3a3a;
+        transform: translateY(-1px);
+      }
+
+      button:active {
+        background-color: #222;
+        transform: translateY(0);
       }
 
       #timer {
-        font-size: 2rem;
+        font-size: 2.8rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        margin-top: 10px;
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
       }
-    }
-  </style>
-</head>
 
-<body>
-  <div id="app">
-    <div class="help">
-      Scramble the cube to any state, then press <strong>SPACE</strong> or tap the cube to start/stop the timer.
+      @media (max-width: 600px) {
+        #cube {
+          width: 280px;
+          height: 280px;
+        }
+
+        .controls {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        button {
+          width: 160px;
+        }
+
+        #timer {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app">
+      <div class="help">
+        Scramble the cube to any state, then press
+        <strong>SPACE</strong> or tap the cube to start/stop the timer.
+      </div>
+
+      <div id="cube"></div>
+
+      <div class="controls">
+        <button id="connect">Connect</button>
+        <button id="reset-state">Reset State</button>
+        <button id="reset-gyro">Reset Gyro</button>
+      </div>
+
+      <div id="timer">0:00.000</div>
     </div>
-
-    <div id="cube"></div>
-
-    <div class="controls">
-      <button id="connect">Connect</button>
-      <button id="reset-state">Reset State</button>
-      <button id="reset-gyro">Reset Gyro</button>
-    </div>
-
-    <div id="timer">0:00.000</div>
-  </div>
-</body>
-
+  </body>
 </html>
-
