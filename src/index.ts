@@ -20,10 +20,15 @@ import {
 
 import { faceletsToPattern, patternToFacelets } from './utils';
 
+// ======================================================
+// 🧩 Constants
+// ======================================================
 const SOLVED_STATE =
   'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
 
-// ---------------- TwistyPlayer ----------------
+// ======================================================
+// 🎲 Setup TwistyPlayer
+// ======================================================
 const twistyPlayer = new TwistyPlayer({
   puzzle: '3x3x3',
   visualization: 'PG3D',
@@ -38,7 +43,9 @@ const twistyPlayer = new TwistyPlayer({
 
 $('#cube').append(twistyPlayer);
 
-// ---------------- Global state ----------------
+// ======================================================
+// 🌍 Variables
+// ======================================================
 let conn: GanCubeConnection | null = null;
 let lastMoves: GanCubeMove[] = [];
 let solutionMoves: GanCubeMove[] = [];
@@ -46,35 +53,40 @@ let twistyScene: THREE.Scene | null = null;
 let twistyVantage: any = null;
 let basis: THREE.Quaternion | null = null;
 let cubeStateInitialized = false;
-let cubeQuaternion = new THREE.Quaternion();
 
 // ======================================================
-// ✅ Force Cube Orientation — White Front, Blue Top
+// ✅ Correct cube orientation: White front, Blue top
+// ======================================================
+const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
+  // +90° X → white front, +180° Z → blue top, small Y tilt for realism
+  new THREE.Euler(Math.PI / 2.2, 0.25, Math.PI)
+);
+
+// The cubeQuaternion will always start aligned to home
+let cubeQuaternion = new THREE.Quaternion().copy(HOME_ORIENTATION);
+
+// ======================================================
+// 🧭 Apply orientation AFTER TwistyPlayer loads
 // ======================================================
 (async () => {
   const vantageList = await twistyPlayer.experimentalCurrentVantages();
   twistyVantage = [...vantageList][0];
   twistyScene = await twistyVantage.scene.scene();
 
-  // Default (Cubing.js): white = up, green = front
-  // Rotate +90° X → white → front
-  // Rotate +180° Z → blue → top
-  const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler(Math.PI / 2, 0, Math.PI)
-  );
+  // Wait for cubing.js to finish internal init
+  setTimeout(() => {
+    twistyScene!.quaternion.copy(HOME_ORIENTATION);
+    twistyVantage!.render();
 
-  twistyScene.quaternion.copy(HOME_ORIENTATION);
-  cubeQuaternion.copy(HOME_ORIENTATION);
-  twistyVantage.render();
-
-  console.log(
-    '%c✅ Cube orientation forced: White front, Blue top',
-    'color:#0f0;font-weight:bold;'
-  );
+    console.log(
+      '%c✅ Cube orientation locked (White front, Blue top)',
+      'color:#0f0;font-weight:bold;'
+    );
+  }, 400);
 })();
 
 // ======================================================
-// 🔄 Animate cube orientation (gyro updates)
+// 🔄 Animate cube orientation (for gyro updates)
 // ======================================================
 async function animateCubeOrientation() {
   if (twistyScene && twistyVantage) {
@@ -86,16 +98,18 @@ async function animateCubeOrientation() {
 requestAnimationFrame(animateCubeOrientation);
 
 // ======================================================
-// ⚙️ GanCube Event Handlers
+// ⚙️ GanCube event handlers
 // ======================================================
 async function handleGyroEvent(event: GanCubeEvent) {
   if (event.type === 'GYRO') {
     const { x: qx, y: qy, z: qz, w: qw } = event.quaternion;
     const quat = new THREE.Quaternion(qx, qz, -qy, qw).normalize();
 
-    if (!basis) basis = quat.clone().conjugate();
+    if (!basis) {
+      basis = quat.clone().conjugate();
+    }
 
-    cubeQuaternion.copy(quat.premultiply(basis));
+    cubeQuaternion.copy(quat.premultiply(basis).premultiply(HOME_ORIENTATION));
   }
 }
 
@@ -133,7 +147,7 @@ function handleCubeEvent(event: GanCubeEvent) {
 }
 
 // ======================================================
-// 💾 MAC Address Persistence
+// 💾 MAC address handler (persistent)
 // ======================================================
 const customMacAddressProvider: MacAddressProvider = async (
   device,
@@ -158,7 +172,7 @@ const customMacAddressProvider: MacAddressProvider = async (
 };
 
 // ======================================================
-// 🧩 UI: Buttons & Connection
+// 🧩 UI: Buttons and actions
 // ======================================================
 $('#reset-state').on('click', async () => {
   await conn?.sendCubeCommand({ type: 'REQUEST_RESET' });
@@ -185,7 +199,7 @@ $('#connect').on('click', async () => {
 });
 
 // ======================================================
-// ⏱ Timer Logic
+// ⏱ Timer logic
 // ======================================================
 let timerState: 'IDLE' | 'READY' | 'RUNNING' | 'STOPPED' = 'IDLE';
 
