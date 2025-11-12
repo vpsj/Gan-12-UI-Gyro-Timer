@@ -14,7 +14,6 @@ import {
   GanCubeMove,
   MacAddressProvider,
   makeTimeFromTimestamp,
-  cubeTimestampCalcSkew,
   cubeTimestampLinearFit
 } from 'gan-web-bluetooth';
 
@@ -55,39 +54,35 @@ let basis: THREE.Quaternion | null = null;
 let cubeStateInitialized = false;
 
 // ======================================================
-// ✅ Correct cube orientation: White front, Blue top
-// ======================================================
-const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
-  // +90° X → white front, +180° Z → blue top, small Y tilt for realism
-  new THREE.Euler(Math.PI / 2.2, 0.25, Math.PI)
-);
-
-// The cubeQuaternion will always start aligned to home
-let cubeQuaternion = new THREE.Quaternion().copy(HOME_ORIENTATION);
-
-// ======================================================
-// 🧭 Apply orientation AFTER TwistyPlayer loads
+// 🧭 Correct cube orientation — WHITE FRONT, BLUE TOP
 // ======================================================
 (async () => {
-  const vantageList = await twistyPlayer.experimentalCurrentVantages();
-  twistyVantage = [...vantageList][0];
+  const vList = await twistyPlayer.experimentalCurrentVantages();
+  twistyVantage = [...vList][0];
   twistyScene = await twistyVantage.scene.scene();
 
-  // Wait for cubing.js to finish internal init
-  setTimeout(() => {
-    twistyScene!.quaternion.copy(HOME_ORIENTATION);
-    twistyVantage!.render();
+  // We use the VANTAGE camera directly instead of cube rotation
+  // Cubing.js default camera looks toward +Z (green front)
+  // We want white front (+Y) and blue top (-Z)
+  const camera = twistyVantage.scene._threeCamera as THREE.PerspectiveCamera;
 
-    console.log(
-      '%c✅ Cube orientation locked (White front, Blue top)',
-      'color:#0f0;font-weight:bold;'
-    );
-  }, 400);
+  // Apply a rotation matrix to move view:
+  // Look at Y+ instead of Z+, then tilt slightly downward
+  const rotation = new THREE.Euler(
+    -Math.PI / 2.2, // tilt down a bit (white front)
+    Math.PI,        // flip 180° to correct left/right
+    0
+  );
+  camera.rotation.copy(rotation);
+
+  twistyVantage.render();
+  console.log('%c✅ Orientation set: White front, Blue top', 'color:#0f0;font-weight:bold;');
 })();
 
 // ======================================================
-// 🔄 Animate cube orientation (for gyro updates)
+// 🔄 Animate cube orientation (gyro updates)
 // ======================================================
+let cubeQuaternion = new THREE.Quaternion();
 async function animateCubeOrientation() {
   if (twistyScene && twistyVantage) {
     twistyScene.quaternion.slerp(cubeQuaternion, 0.25);
@@ -109,7 +104,7 @@ async function handleGyroEvent(event: GanCubeEvent) {
       basis = quat.clone().conjugate();
     }
 
-    cubeQuaternion.copy(quat.premultiply(basis).premultiply(HOME_ORIENTATION));
+    cubeQuaternion.copy(quat.premultiply(basis));
   }
 }
 
@@ -147,7 +142,7 @@ function handleCubeEvent(event: GanCubeEvent) {
 }
 
 // ======================================================
-// 💾 MAC address handler (persistent)
+// 💾 MAC address persistence
 // ======================================================
 const customMacAddressProvider: MacAddressProvider = async (
   device,
@@ -172,7 +167,7 @@ const customMacAddressProvider: MacAddressProvider = async (
 };
 
 // ======================================================
-// 🧩 UI: Buttons and actions
+// 🧩 UI Controls
 // ======================================================
 $('#reset-state').on('click', async () => {
   await conn?.sendCubeCommand({ type: 'REQUEST_RESET' });
