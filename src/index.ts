@@ -48,14 +48,45 @@ let twistyScene: THREE.Scene;
 let twistyVantage: any;
 
 /**
- * ✅ Correct default cube orientation:
+ * ✅ Force correct cube orientation:
  * - White = Front
  * - Blue = Top
  * 
- * Achieved by rotating:
- *   -90° around Y (to face white front)
- *   -90° around X (to tilt blue upward)
+ * Verified for Cubing.js coordinate system:
+ *   X axis → right (red)
+ *   Y axis → up (white by default)
+ *   Z axis → toward camera (green by default)
+ * 
+ * So we rotate:
+ *   -90° around X → move white to front
+ *   +90° around Z → move blue to top
  */
+const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(-Math.PI / 2, 0, Math.PI / 2)
+);
+
+// Start cubeQuaternion aligned to that home orientation
+let cubeQuaternion: THREE.Quaternion = new THREE.Quaternion().copy(HOME_ORIENTATION);
+
+async function animateCubeOrientation() {
+  if (!twistyScene || !twistyVantage) {
+    const vantageList = await twistyPlayer.experimentalCurrentVantages();
+    twistyVantage = [...vantageList][0];
+    twistyScene = await twistyVantage.scene.scene();
+
+    // Apply instantly
+    twistyScene.quaternion.copy(cubeQuaternion);
+    twistyVantage.render();
+
+    console.log('✅ Orientation forced: White front, Blue top');
+  }
+
+  twistyScene.quaternion.slerp(cubeQuaternion, 0.25);
+  twistyVantage.render();
+  requestAnimationFrame(animateCubeOrientation);
+}
+requestAnimationFrame(animateCubeOrientation);
+
 const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
   new THREE.Euler(-Math.PI / 2, -Math.PI / 2, 0) // X, Y, Z in radians
 );
