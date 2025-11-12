@@ -37,7 +37,7 @@ const twistyPlayer = new TwistyPlayer({
   // Correct orientation for standard GAN color scheme:
   // Blue on top → cameraLatitude = 25 (slight downward tilt)
   // White in front → cameraLongitude = -90
-  cameraLatitude: 25,
+  cameraLatitude: -35,
   cameraLongitude: -90,
 });
 
