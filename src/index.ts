@@ -34,17 +34,21 @@ const twistyPlayer = new TwistyPlayer({
   experimentalDragInput: 'none',
   tempoScale: 5,
 });
+
 $('#cube').append(twistyPlayer);
 
-// ✅ Force global scope even inside Vite’s module sandbox
-if (typeof window !== "undefined") {
-  // @ts-ignore
-  (globalThis as any).twistyPlayer = twistyPlayer;
-  // Also mirror to window for browsers that use iframe scopes
-  // @ts-ignore
-  window.twistyPlayer = twistyPlayer;
-  console.log("✅ TwistyPlayer exposed globally");
-}
+// ✅ Expose TwistyPlayer globally *after* DOM fully loads
+window.addEventListener("load", () => {
+  try {
+    // Make sure it’s really visible in the browser console
+    (window as any).twistyPlayer = twistyPlayer;
+    (globalThis as any).twistyPlayer = twistyPlayer;
+    console.log("✅ TwistyPlayer exposed globally (post-load)");
+  } catch (err) {
+    console.error("❌ Failed to expose TwistyPlayer globally:", err);
+  }
+});
+
 
 
 // --- GLOBALS ---
