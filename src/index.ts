@@ -23,7 +23,7 @@ import { faceletsToPattern, patternToFacelets } from './utils';
 const SOLVED_STATE =
   'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
 
-// ✅ Setup TwistyPlayer
+// ---------------- TwistyPlayer ----------------
 const twistyPlayer = new TwistyPlayer({
   puzzle: '3x3x3',
   visualization: 'PG3D',
@@ -38,87 +38,73 @@ const twistyPlayer = new TwistyPlayer({
 
 $('#cube').append(twistyPlayer);
 
-//
-// 🔄 Cube rotation animation setup
-//
+// ---------------- state ----------------
 let conn: GanCubeConnection | null;
 let lastMoves: GanCubeMove[] = [];
 let solutionMoves: GanCubeMove[] = [];
-let twistyScene: THREE.Scene;
-let twistyVantage: any;
+let twistyScene: THREE.Scene | null = null;
+let twistyVantage: any = null;
+let basis: THREE.Quaternion | null = null;
+let cubeStateInitialized = false;
 
-/**
- * ✅ Force correct cube orientation:
- * - White = Front
- * - Blue = Top
- * 
- * Verified for Cubing.js coordinate system:
- *   X axis → right (red)
- *   Y axis → up (white by default)
- *   Z axis → toward camera (green by default)
- * 
- * So we rotate:
- *   -90° around X → move white to front
- *   +90° around Z → move blue to top
- */
-const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
-  new THREE.Euler(-Math.PI / 2, 0, Math.PI / 2)
-);
+// ---------------- Orientation candidates ----------------
+// We provide several candidate Euler combinations (radians).
+// One of these should result in White=Front, Blue=Top depending on cubing.js version.
+// If the default doesn't match, open console and tell me the Euler printed so I can pick the exact one.
+const orientationCandidates: THREE.Euler[] = [
+  // Candidate A (default) - commonly works
+  new THREE.Euler(-Math.PI / 2, 0, Math.PI / 2),
 
-// Start cubeQuaternion aligned to that home orientation
+  // Candidate B - alternate mapping
+  new THREE.Euler(-Math.PI / 2, -Math.PI / 2, 0),
+
+  // Candidate C - camera-based swap
+  new THREE.Euler(0, Math.PI / 2, Math.PI / 2),
+
+  // Candidate D - another common orientation
+  new THREE.Euler(Math.PI / 2, Math.PI / 2, 0)
+];
+
+// Choose which candidate index to try first (0..n-1)
+let chosenCandidateIndex = 0; // change to 1/2/3 to try others quickly
+const chosenEuler = orientationCandidates[chosenCandidateIndex];
+
+// The HOME_ORIENTATION quaternion we will apply to the scene.
+// This forces the visual default orientation (white front, blue top).
+const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(chosenEuler);
+
+// Start cubeQuaternion aligned to the HOME_ORIENTATION
 let cubeQuaternion: THREE.Quaternion = new THREE.Quaternion().copy(HOME_ORIENTATION);
 
+// ---------------- animate & apply orientation ----------------
 async function animateCubeOrientation() {
   if (!twistyScene || !twistyVantage) {
     const vantageList = await twistyPlayer.experimentalCurrentVantages();
     twistyVantage = [...vantageList][0];
     twistyScene = await twistyVantage.scene.scene();
 
-    // Apply instantly
+    // Immediately set forced orientation so user sees it right away
     twistyScene.quaternion.copy(cubeQuaternion);
     twistyVantage.render();
 
-    console.log('✅ Orientation forced: White front, Blue top');
+    // log orientation so you can verify and iterate
+    const e = new THREE.Euler().setFromQuaternion(cubeQuaternion);
+    console.info('FORCED ORIENTATION (deg):',
+      (e.x * 180 / Math.PI).toFixed(1),
+      (e.y * 180 / Math.PI).toFixed(1),
+      (e.z * 180 / Math.PI).toFixed(1),
+      '| candidateIndex=', chosenCandidateIndex
+    );
   }
 
-  twistyScene.quaternion.slerp(cubeQuaternion, 0.25);
+  // slerp towards cubeQuaternion (will be updated by gyro when connected)
+  twistyScene!.quaternion.slerp(cubeQuaternion, 0.25);
   twistyVantage.render();
   requestAnimationFrame(animateCubeOrientation);
 }
 requestAnimationFrame(animateCubeOrientation);
 
-const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
-  new THREE.Euler(-Math.PI / 2, -Math.PI / 2, 0) // X, Y, Z in radians
-);
-
-// The cubeQuaternion will start at the home orientation
-let cubeQuaternion: THREE.Quaternion = new THREE.Quaternion().copy(HOME_ORIENTATION);
-
-async function animateCubeOrientation() {
-  if (!twistyScene || !twistyVantage) {
-    const vantageList = await twistyPlayer.experimentalCurrentVantages();
-    twistyVantage = [...vantageList][0];
-    twistyScene = await twistyVantage.scene.scene();
-
-    // Apply the correct starting orientation instantly
-    twistyScene.quaternion.copy(cubeQuaternion);
-    twistyVantage.render();
-
-    console.log('✅ Default orientation: White front, Blue top');
-  }
-
-  // Smooth transitions on updates
-  twistyScene.quaternion.slerp(cubeQuaternion, 0.25);
-  twistyVantage.render();
-  requestAnimationFrame(animateCubeOrientation);
-}
-requestAnimationFrame(animateCubeOrientation);
-
-//
-// ⚙️ Handle GanCube events
-//
-let basis: THREE.Quaternion | null;
-
+// ---------------- event handlers & gyro integration ----------------
 async function handleGyroEvent(event: GanCubeEvent) {
   if (event.type === 'GYRO') {
     const { x: qx, y: qy, z: qz, w: qw } = event.quaternion;
@@ -128,7 +114,7 @@ async function handleGyroEvent(event: GanCubeEvent) {
       basis = quat.clone().conjugate();
     }
 
-    // Apply the new gyro rotation relative to the home orientation
+    // apply gyro relative to HOME_ORIENTATION
     cubeQuaternion.copy(quat.premultiply(basis).premultiply(HOME_ORIENTATION));
   }
 }
@@ -142,8 +128,6 @@ async function handleMoveEvent(event: GanCubeEvent) {
     if (lastMoves.length > 256) lastMoves = lastMoves.slice(-256);
   }
 }
-
-let cubeStateInitialized = false;
 
 async function handleFaceletsEvent(event: GanCubeEvent) {
   if (event.type === 'FACELETS' && !cubeStateInitialized) {
@@ -168,20 +152,15 @@ function handleCubeEvent(event: GanCubeEvent) {
   }
 }
 
-// ✅ Keep your working MAC handler
-const customMacAddressProvider: MacAddressProvider = async (
-  device,
-  isFallbackCall
-): Promise<string | null> => {
+// ---------------- MAC provider (keep yours) ----------------
+const customMacAddressProvider: MacAddressProvider = async (device, isFallbackCall): Promise<string | null> => {
   const savedMac = localStorage.getItem('gan_cube_mac');
   if (savedMac && !isFallbackCall) {
     console.log(`Using saved MAC: ${savedMac}`);
     return savedMac;
   }
 
-  const manualMac = prompt(
-    'Please enter your cube’s MAC address (e.g., F0:AB:12:34:56:78):'
-  );
+  const manualMac = prompt('Please enter your cube’s MAC address (e.g., F0:AB:12:34:56:78):');
   if (manualMac) {
     localStorage.setItem('gan_cube_mac', manualMac);
     console.log(`Saved MAC: ${manualMac}`);
@@ -191,6 +170,7 @@ const customMacAddressProvider: MacAddressProvider = async (
   return null;
 };
 
+// ---------------- UI handlers (connect/reset) ----------------
 $('#reset-state').on('click', async () => {
   await conn?.sendCubeCommand({ type: 'REQUEST_RESET' });
   twistyPlayer.alg = '';
@@ -214,9 +194,7 @@ $('#connect').on('click', async () => {
   }
 });
 
-//
-// 🕒 Timer logic
-//
+// ---------------- Timer code (unchanged) ----------------
 let timerState: 'IDLE' | 'READY' | 'RUNNING' | 'STOPPED' = 'IDLE';
 
 function setTimerState(state: typeof timerState) {
@@ -255,19 +233,13 @@ twistyPlayer.experimentalModel.currentPattern.addFreshListener(async (kpattern) 
 
 function setTimerValue(timestamp: number) {
   const t = makeTimeFromTimestamp(timestamp);
-  $('#timer').html(
-    `${t.minutes}:${t.seconds.toString(10).padStart(2, '0')}.${t.milliseconds
-      .toString(10)
-      .padStart(3, '0')}`
-  );
+  $('#timer').html(`${t.minutes}:${t.seconds.toString(10).padStart(2, '0')}.${t.milliseconds.toString(10).padStart(3, '0')}`);
 }
 
 let localTimer: Subscription | null = null;
 function startLocalTimer() {
   const startTime = now();
-  localTimer = interval(30).subscribe(() =>
-    setTimerValue(now() - startTime)
-  );
+  localTimer = interval(30).subscribe(() => setTimerValue(now() - startTime));
 }
 
 function stopLocalTimer() {
