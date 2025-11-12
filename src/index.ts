@@ -36,17 +36,16 @@ const twistyPlayer = new TwistyPlayer({
 });
 
 $('#cube').append(twistyPlayer);
-
-// 🧭 Dump the scene structure once TwistyPlayer is ready
 (async () => {
   const vantages = await twistyPlayer.experimentalCurrentVantages();
   const vantage = vantages[0];
   const scene = await vantage.scene.scene();
 
-  console.group("TwistyPlayer Scene Children");
+  console.group("Twisty Scene Children");
   scene.children.forEach((child, i) => console.log(i, child.name || child.type));
   console.groupEnd();
 })();
+
 
 
 
