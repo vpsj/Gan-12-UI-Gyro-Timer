@@ -127,6 +127,18 @@
 
     <div id="timer">0:00.000</div>
   </div>
+<script type="module">
+  import { TwistyPlayer } from "./assets/index.js";
+
+  // Wait a short moment for module initialization to finish
+  window.addEventListener("DOMContentLoaded", () => {
+    // @ts-ignore
+    window.twistyPlayer = TwistyPlayer?.instances?.[0] || null;
+    console.log("✅ TwistyPlayer exposed globally via index.html");
+  });
+</script>
+
 </body>
 
 </html>
+
