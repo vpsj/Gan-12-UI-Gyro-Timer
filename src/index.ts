@@ -35,6 +35,7 @@ const twistyPlayer = new TwistyPlayer({
   tempoScale: 5,
 });
 $('#cube').append(twistyPlayer);
+(window as any).twistyPlayer = twistyPlayer;
 
 // --- GLOBALS ---
 let conn: GanCubeConnection | null = null;
