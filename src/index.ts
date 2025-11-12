@@ -20,9 +20,10 @@ import {
 
 import { faceletsToPattern, patternToFacelets } from './utils';
 
-const SOLVED_STATE = "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB";
+const SOLVED_STATE =
+  'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
 
-// White in front, Blue on top
+// ✅ Setup TwistyPlayer
 const twistyPlayer = new TwistyPlayer({
   puzzle: '3x3x3',
   visualization: 'PG3D',
@@ -33,13 +34,7 @@ const twistyPlayer = new TwistyPlayer({
   hintFacelets: 'none',
   experimentalDragInput: 'none',
   tempoScale: 5,
-
-  // Correct orientation for standard WCA cube color scheme
-  // Blue on top, White in front → cameraLongitude = -90, cameraLatitude = 30
-  cameraLatitude: 30,
-  cameraLongitude: -90,
 });
-
 
 $('#cube').append(twistyPlayer);
 
@@ -52,15 +47,36 @@ let solutionMoves: GanCubeMove[] = [];
 let twistyScene: THREE.Scene;
 let twistyVantage: any;
 
-const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(new THREE.Euler(15 * Math.PI / 180, -20 * Math.PI / 180, 0));
-let cubeQuaternion: THREE.Quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(30 * Math.PI / 180, -30 * Math.PI / 180, 0));
+/**
+ * ✅ Correct default cube orientation:
+ * - White = Front
+ * - Blue = Top
+ * 
+ * Achieved by rotating:
+ *   -90° around Y (to face white front)
+ *   -90° around X (to tilt blue upward)
+ */
+const HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(-Math.PI / 2, -Math.PI / 2, 0) // X, Y, Z in radians
+);
+
+// The cubeQuaternion will start at the home orientation
+let cubeQuaternion: THREE.Quaternion = new THREE.Quaternion().copy(HOME_ORIENTATION);
 
 async function animateCubeOrientation() {
   if (!twistyScene || !twistyVantage) {
     const vantageList = await twistyPlayer.experimentalCurrentVantages();
     twistyVantage = [...vantageList][0];
     twistyScene = await twistyVantage.scene.scene();
+
+    // Apply the correct starting orientation instantly
+    twistyScene.quaternion.copy(cubeQuaternion);
+    twistyVantage.render();
+
+    console.log('✅ Default orientation: White front, Blue top');
   }
+
+  // Smooth transitions on updates
   twistyScene.quaternion.slerp(cubeQuaternion, 0.25);
   twistyVantage.render();
   requestAnimationFrame(animateCubeOrientation);
@@ -73,22 +89,25 @@ requestAnimationFrame(animateCubeOrientation);
 let basis: THREE.Quaternion | null;
 
 async function handleGyroEvent(event: GanCubeEvent) {
-  if (event.type === "GYRO") {
+  if (event.type === 'GYRO') {
     const { x: qx, y: qy, z: qz, w: qw } = event.quaternion;
     const quat = new THREE.Quaternion(qx, qz, -qy, qw).normalize();
+
     if (!basis) {
       basis = quat.clone().conjugate();
     }
+
+    // Apply the new gyro rotation relative to the home orientation
     cubeQuaternion.copy(quat.premultiply(basis).premultiply(HOME_ORIENTATION));
   }
 }
 
 async function handleMoveEvent(event: GanCubeEvent) {
-  if (event.type === "MOVE") {
-    if (timerState === "READY") setTimerState("RUNNING");
+  if (event.type === 'MOVE') {
+    if (timerState === 'READY') setTimerState('RUNNING');
     twistyPlayer.experimentalAddMove(event.move, { cancel: false });
     lastMoves.push(event);
-    if (timerState === "RUNNING") solutionMoves.push(event);
+    if (timerState === 'RUNNING') solutionMoves.push(event);
     if (lastMoves.length > 256) lastMoves = lastMoves.slice(-256);
   }
 }
@@ -96,7 +115,7 @@ async function handleMoveEvent(event: GanCubeEvent) {
 let cubeStateInitialized = false;
 
 async function handleFaceletsEvent(event: GanCubeEvent) {
-  if (event.type === "FACELETS" && !cubeStateInitialized) {
+  if (event.type === 'FACELETS' && !cubeStateInitialized) {
     if (event.facelets !== SOLVED_STATE) {
       const kpattern = faceletsToPattern(event.facelets);
       const solution = await experimentalSolve3x3x3IgnoringCenters(kpattern);
@@ -109,25 +128,29 @@ async function handleFaceletsEvent(event: GanCubeEvent) {
 }
 
 function handleCubeEvent(event: GanCubeEvent) {
-  if (event.type === "GYRO") handleGyroEvent(event);
-  else if (event.type === "MOVE") handleMoveEvent(event);
-  else if (event.type === "FACELETS") handleFaceletsEvent(event);
-  else if (event.type === "DISCONNECT") {
+  if (event.type === 'GYRO') handleGyroEvent(event);
+  else if (event.type === 'MOVE') handleMoveEvent(event);
+  else if (event.type === 'FACELETS') handleFaceletsEvent(event);
+  else if (event.type === 'DISCONNECT') {
     twistyPlayer.alg = '';
     $('#connect').html('Connect');
   }
 }
-//  Improved version that saves MAC address in localStorage
-const customMacAddressProvider: MacAddressProvider = async (device, isFallbackCall): Promise<string | null> => {
-  // If we’ve saved a MAC previously, reuse it
+
+// ✅ Keep your working MAC handler
+const customMacAddressProvider: MacAddressProvider = async (
+  device,
+  isFallbackCall
+): Promise<string | null> => {
   const savedMac = localStorage.getItem('gan_cube_mac');
   if (savedMac && !isFallbackCall) {
     console.log(`Using saved MAC: ${savedMac}`);
     return savedMac;
   }
 
-  // Otherwise, prompt the user
-  const manualMac = prompt('Please enter your cube’s MAC address (e.g., F0:AB:12:34:56:78):');
+  const manualMac = prompt(
+    'Please enter your cube’s MAC address (e.g., F0:AB:12:34:56:78):'
+  );
   if (manualMac) {
     localStorage.setItem('gan_cube_mac', manualMac);
     console.log(`Saved MAC: ${manualMac}`);
@@ -137,9 +160,8 @@ const customMacAddressProvider: MacAddressProvider = async (device, isFallbackCa
   return null;
 };
 
-
 $('#reset-state').on('click', async () => {
-  await conn?.sendCubeCommand({ type: "REQUEST_RESET" });
+  await conn?.sendCubeCommand({ type: 'REQUEST_RESET' });
   twistyPlayer.alg = '';
 });
 
@@ -154,9 +176,9 @@ $('#connect').on('click', async () => {
   } else {
     conn = await connectGanCube(customMacAddressProvider);
     conn.events$.subscribe(handleCubeEvent);
-    await conn.sendCubeCommand({ type: "REQUEST_HARDWARE" });
-    await conn.sendCubeCommand({ type: "REQUEST_FACELETS" });
-    await conn.sendCubeCommand({ type: "REQUEST_BATTERY" });
+    await conn.sendCubeCommand({ type: 'REQUEST_HARDWARE' });
+    await conn.sendCubeCommand({ type: 'REQUEST_FACELETS' });
+    await conn.sendCubeCommand({ type: 'REQUEST_BATTERY' });
     $('#connect').html('Disconnect');
   }
 });
@@ -164,25 +186,25 @@ $('#connect').on('click', async () => {
 //
 // 🕒 Timer logic
 //
-let timerState: "IDLE" | "READY" | "RUNNING" | "STOPPED" = "IDLE";
+let timerState: 'IDLE' | 'READY' | 'RUNNING' | 'STOPPED' = 'IDLE';
 
 function setTimerState(state: typeof timerState) {
   timerState = state;
   switch (state) {
-    case "IDLE":
+    case 'IDLE':
       stopLocalTimer();
       $('#timer').hide();
       break;
-    case "READY":
+    case 'READY':
       setTimerValue(0);
       $('#timer').show().css('color', '#0f0');
       break;
-    case "RUNNING":
+    case 'RUNNING':
       solutionMoves = [];
       startLocalTimer();
       $('#timer').css('color', '#999');
       break;
-    case "STOPPED":
+    case 'STOPPED':
       stopLocalTimer();
       $('#timer').css('color', '#fff');
       const fittedMoves = cubeTimestampLinearFit(solutionMoves);
@@ -194,21 +216,27 @@ function setTimerState(state: typeof timerState) {
 
 twistyPlayer.experimentalModel.currentPattern.addFreshListener(async (kpattern) => {
   const facelets = patternToFacelets(kpattern);
-  if (facelets === SOLVED_STATE && timerState === "RUNNING") {
-    setTimerState("STOPPED");
+  if (facelets === SOLVED_STATE && timerState === 'RUNNING') {
+    setTimerState('STOPPED');
     twistyPlayer.alg = '';
   }
 });
 
 function setTimerValue(timestamp: number) {
   const t = makeTimeFromTimestamp(timestamp);
-  $('#timer').html(`${t.minutes}:${t.seconds.toString(10).padStart(2, '0')}.${t.milliseconds.toString(10).padStart(3, '0')}`);
+  $('#timer').html(
+    `${t.minutes}:${t.seconds.toString(10).padStart(2, '0')}.${t.milliseconds
+      .toString(10)
+      .padStart(3, '0')}`
+  );
 }
 
 let localTimer: Subscription | null = null;
 function startLocalTimer() {
   const startTime = now();
-  localTimer = interval(30).subscribe(() => setTimerValue(now() - startTime));
+  localTimer = interval(30).subscribe(() =>
+    setTimerValue(now() - startTime)
+  );
 }
 
 function stopLocalTimer() {
@@ -217,8 +245,8 @@ function stopLocalTimer() {
 }
 
 function activateTimer() {
-  if (timerState === "IDLE" && conn) setTimerState("READY");
-  else setTimerState("IDLE");
+  if (timerState === 'IDLE' && conn) setTimerState('READY');
+  else setTimerState('IDLE');
 }
 
 $(document).on('keydown', (event) => {
@@ -228,6 +256,6 @@ $(document).on('keydown', (event) => {
   }
 });
 
-$("#cube").on('touchstart', () => {
+$('#cube').on('touchstart', () => {
   activateTimer();
 });
