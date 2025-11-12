@@ -22,9 +22,7 @@ import { faceletsToPattern, patternToFacelets } from './utils';
 
 const SOLVED_STATE = "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB";
 
-//
-// 🧩 Initialize the Twisty Cube
-//
+// White in front, Blue on top
 const twistyPlayer = new TwistyPlayer({
   puzzle: '3x3x3',
   visualization: 'PG3D',
@@ -36,12 +34,13 @@ const twistyPlayer = new TwistyPlayer({
   experimentalDragInput: 'none',
   tempoScale: 5,
 
-  // ✅ Blue on top, White in front (camera tilt)
-  // +45° latitude: look slightly downward (to see the top)
-  // 180° longitude: rotate so that white faces front
-  cameraLatitude: 45,
-  cameraLongitude: 180,
+  // Correct orientation for standard GAN color scheme:
+  // Blue on top → cameraLatitude = 25 (slight downward tilt)
+  // White in front → cameraLongitude = -90
+  cameraLatitude: 25,
+  cameraLongitude: -90,
 });
+
 
 $('#cube').append(twistyPlayer);
 
@@ -119,18 +118,26 @@ function handleCubeEvent(event: GanCubeEvent) {
     $('#connect').html('Connect');
   }
 }
-
-//
-// 🧠 Connection logic
-//
+//  Improved version that saves MAC address in localStorage
 const customMacAddressProvider: MacAddressProvider = async (device, isFallbackCall): Promise<string | null> => {
-  if (isFallbackCall) {
-    return prompt('Unable to determine cube MAC address!\nPlease enter manually:');
-  } else {
-    return typeof device.watchAdvertisements === 'function' ? null :
-      prompt('Browser lacks Web Bluetooth watchAdvertisements(). Enable:\nchrome://flags/#enable-experimental-web-platform-features\nor enter MAC manually:');
+  // If we’ve saved a MAC previously, reuse it
+  const savedMac = localStorage.getItem('gan_cube_mac');
+  if (savedMac && !isFallbackCall) {
+    console.log(`Using saved MAC: ${savedMac}`);
+    return savedMac;
   }
+
+  // Otherwise, prompt the user
+  const manualMac = prompt('Please enter your cube’s MAC address (e.g., F0:AB:12:34:56:78):');
+  if (manualMac) {
+    localStorage.setItem('gan_cube_mac', manualMac);
+    console.log(`Saved MAC: ${manualMac}`);
+    return manualMac;
+  }
+
+  return null;
 };
+
 
 $('#reset-state').on('click', async () => {
   await conn?.sendCubeCommand({ type: "REQUEST_RESET" });
