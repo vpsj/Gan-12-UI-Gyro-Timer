@@ -34,10 +34,9 @@ const twistyPlayer = new TwistyPlayer({
   experimentalDragInput: 'none',
   tempoScale: 5,
 
-  // Correct orientation for standard GAN color scheme:
-  // Blue on top → cameraLatitude = 25 (slight downward tilt)
-  // White in front → cameraLongitude = -90
-  cameraLatitude: -35,
+  // Correct orientation for standard WCA cube color scheme
+  // Blue on top, White in front → cameraLongitude = -90, cameraLatitude = 30
+  cameraLatitude: 30,
   cameraLongitude: -90,
 });
 
