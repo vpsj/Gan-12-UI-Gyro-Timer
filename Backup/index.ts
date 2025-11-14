@@ -51,7 +51,7 @@ let scrambleIndex = -1;
 
 async function generateNewScramble() {
   const scramble = await randomScrambleForEvent("333");
-  scrambleHistory.push(scramble.toString());
+  scrambleHistory.push(scramble);
   scrambleIndex = scrambleHistory.length - 1;
   displayScramble();
 }
@@ -170,7 +170,7 @@ function handleCubeEvent(event: GanCubeEvent) {
 // ------------------------------------------------------------
 // MAC Handler
 // ------------------------------------------------------------
-const customMacAddressProvider: MacAddressProvider = async (_device, isFallbackCall) => {
+const customMacAddressProvider: MacAddressProvider = async (device, isFallbackCall) => {
   const saved = localStorage.getItem("gan_cube_mac");
   if (saved && !isFallbackCall) return saved;
   const manual = prompt("Please enter your cube’s MAC address:");
@@ -210,8 +210,8 @@ $("#connect").on("click", async () => {
   await conn.sendCubeCommand({ type: "REQUEST_BATTERY" });
 
   try {
-    // await conn.sendCubeCommand({ type: "REQUEST_GYRO" });
-    // console.log("✅ REQUEST_GYRO sent");
+    await conn.sendCubeCommand({ type: "REQUEST_GYRO" });
+    console.log("✅ REQUEST_GYRO sent");
   } catch {
     console.warn("⚠️ Cube may not require REQUEST_GYRO");
   }

@@ -91,3 +91,122 @@ body {
   font-size: 0.8em;
   margin-top: 0.5em;
 }
+/* ---------- SCRAMBLE BAR ---------- */
+#scramble-bar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: "Roboto Mono", monospace;
+  color: #eee;
+  font-size: 16px;
+  z-index: 5;
+}
+
+#scramble-bar button {
+  background: #2b2b2b;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 16px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+#scramble-bar button:hover {
+  background: #3b3b3b;
+  transform: translateY(-1px);
+}
+
+/* ---------- TIMER ---------- */
+#timer {
+  position: absolute;
+  top: 80px; /* places it just below the scramble bar */
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-family: "Roboto Mono", monospace;
+  font-size: 56px;
+  background: rgba(40, 40, 40, 0.8);
+  padding: 12px 30px;
+  border-radius: 25px;
+  text-align: center;
+  min-width: 200px;
+  z-index: 4;
+}
+
+/* ---------- CUBE ---------- */
+#cube {
+  display: flex;
+  justify-content: center;
+  margin-top: 160px; /* pushes cube down so timer floats above it */
+  z-index: 1;
+}
+
+/* ---------- CONTROLS ---------- */
+.controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  gap: 20px;
+}
+
+.controls button {
+  background: #2b2b2b;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.controls button:hover {
+  background: #3b3b3b;
+  transform: translateY(-1px);
+}
+
+#inspect-overlay {
+  position: absolute;
+  top: 140px; /* moves it into the gap above the cube */
+  left: 50%;
+  transform: translateX(-50%);
+  color: #00ff88;
+  font-size: 96px;
+  font-family: "Roboto Mono", monospace;
+  font-weight: bold;
+  text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
+  text-align: center;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity 0.5s ease-in-out;
+}
+
+@keyframes flashSlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.flash-slow {
+  animation: flashSlow 2s infinite ease-in-out;
+}
+
+.countdown {
+  font-size: 120px;
+  color: white;
+  text-shadow: 0 0 30px rgba(255,255,255,0.8);
+}
+
+.begin {
+  color: #00ff88;
+  font-size: 100px;
+  text-shadow: 0 0 25px #00ff88;
+}

@@ -4,16 +4,118 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>gan-cube-sample</title>
+  <title>Gan 12 UI Gyro Timer</title>
+
+  <!-- Vite injects correct JS + CSS paths automatically -->
+  <script type="module" src="/src/index.ts"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #181818, #0e0e0e);
+      color: #ffffff;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .help {
+      text-align: center;
+      font-size: 1.1rem;
+      color: #aaa;
+      margin-bottom: 25px;
+      max-width: 90%;
+      line-height: 1.4;
+    }
+
+    #cube {
+      width: 340px;
+      height: 340px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 25px;
+    }
+
+    button {
+      background-color: #292929;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 10px 20px;
+      color: #f1f1f1;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    button:hover {
+      background-color: #3a3a3a;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      background-color: #222;
+      transform: translateY(0);
+    }
+
+    #timer {
+      font-size: 2.8rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-top: 10px;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    @media (max-width: 600px) {
+      #cube {
+        width: 280px;
+        height: 280px;
+      }
+
+      .controls {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      button {
+        width: 160px;
+      }
+
+      #timer {
+        font-size: 2rem;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <div id="scramble-bar">
+    <button id="prev-scramble">◀ Prev</button>
+    <span id="scramble-text">Loading...</span>
+    <button id="next-scramble">Next ▶</button>
+  </div>
 
   <div id="app">
+    <div id="timer">0:00.000</div>
+	<div id="inspect-overlay"></div>
 
     <div class="help">
-      Scramble cube to arbitrary state then press SPACE or touch Cube
-      to activate basic solving timer
+      Scramble the cube to any state, then press <b>SPACE</b> or tap the cube to start/stop the timer.
     </div>
 
     <div id="cube"></div>
@@ -23,49 +125,8 @@
       <button id="reset-state">Reset State</button>
       <button id="reset-gyro">Reset Gyro</button>
     </div>
-
-    <div class="info">
-
-      <label for="deviceName">Device Name</label>
-      <input id="deviceName" type="text" readonly value="- n/a -">
-
-      <label for="deviceMAC">Device MAC</label>
-      <input id="deviceMAC" type="text" readonly value="- n/a -">
-
-      <label for="hardwareName">Hardware Name</label>
-      <input id="hardwareName" type="text" readonly value="- n/a -">
-
-      <label for="hardwareVersion">Hardware Version</label>
-      <input id="hardwareVersion" type="text" readonly value="- n/a -">
-
-      <label for="softwareVersion">Software Version</label>
-      <input id="softwareVersion" type="text" readonly value="- n/a -">
-
-      <label for="productDate">Product Date</label>
-      <input id="productDate" type="text" readonly value="- n/a -">
-
-      <label for="gyroSupported">Gyro Supported</label>
-      <input id="gyroSupported" type="text" readonly value="- n/a -">
-
-      <label for="batteryLevel">Battery</label>
-      <input id="batteryLevel" type="text" readonly value="- n/a -">
-
-      <label for="skew">Clock Skew</label>
-      <input id="skew" type="text" readonly value="- n/a -">
-
-      <label for="quaternion">Quaternion</label>
-      <input id="quaternion" type="text" readonly value="- n/a -">
-
-      <label for="velocity">Angular Velocity</label>
-      <input id="velocity" type="text" readonly value="- n/a -">
-
-    </div>
-
-    <div id="timer">0:00.000</div>
-
   </div>
-  <script type="module" src="/src/index.ts"></script>
-
 </body>
+
 
 </html>

@@ -6,7 +6,6 @@ import { Subscription, interval } from "rxjs";
 import { TwistyPlayer } from "cubing/twisty";
 import { experimentalSolve3x3x3IgnoringCenters } from "cubing/search";
 import * as THREE from "three";
-import { randomScrambleForEvent } from "cubing/scramble"; // ✅ Scramble import
 
 import {
   now,
@@ -37,48 +36,13 @@ const twistyPlayer = new TwistyPlayer({
   hintFacelets: "none",
   experimentalDragInput: "none",
   tempoScale: 5,
+
+  // Adjusted to show Blue top, White front
   cameraLatitude: 15,
   cameraLongitude: 180,
 });
 
 $("#cube").append(twistyPlayer);
-
-// ------------------------------------------------------------
-// Scramble Controls
-// ------------------------------------------------------------
-let scrambleHistory: string[] = [];
-let scrambleIndex = -1;
-
-async function generateNewScramble() {
-  const scramble = await randomScrambleForEvent("333");
-  scrambleHistory.push(scramble.toString());
-  scrambleIndex = scrambleHistory.length - 1;
-  displayScramble();
-}
-
-function displayScramble() {
-  const scramble = scrambleHistory[scrambleIndex];
-  $("#scramble-text").text(scramble);
-  twistyPlayer.alg = scramble;
-}
-
-$("#next-scramble").on("click", async () => {
-  if (scrambleIndex < scrambleHistory.length - 1) {
-    scrambleIndex++;
-    displayScramble();
-  } else {
-    await generateNewScramble();
-  }
-});
-
-$("#prev-scramble").on("click", () => {
-  if (scrambleIndex > 0) {
-    scrambleIndex--;
-    displayScramble();
-  }
-});
-
-generateNewScramble();
 
 // ------------------------------------------------------------
 // Globals
@@ -93,6 +57,7 @@ let twistyScene: THREE.Scene;
 let twistyVantage: any;
 let cubeQuaternion = new THREE.Quaternion();
 let HOME_ORIENTATION = new THREE.Quaternion().setFromEuler(
+  // This fixes camera orientation → Blue top, White front
   new THREE.Euler(-90 * Math.PI / 180, 180 * Math.PI / 180, 0)
 );
 
@@ -112,6 +77,7 @@ async function animateCubeOrientation() {
     }
   }
 
+  // Smooth slerp towards target quaternion
   twistyScene.quaternion.slerp(cubeQuaternion, 0.25);
   twistyVantage.render();
 
@@ -124,12 +90,16 @@ requestAnimationFrame(animateCubeOrientation);
 // ------------------------------------------------------------
 async function handleGyroEvent(event: GanCubeEvent) {
   if (event.type !== "GYRO") return;
+
   const { x: qx, y: qy, z: qz, w: qw } = event.quaternion;
   const quat = new THREE.Quaternion(qx, qz, -qy, qw).normalize();
+
   if (!basis) {
     basis = quat.clone().conjugate();
     console.log("✅ Gyro calibrated (basis set).");
   }
+
+  // Apply calibration and home orientation
   cubeQuaternion.copy(quat.premultiply(basis).premultiply(HOME_ORIENTATION));
 }
 
@@ -157,6 +127,7 @@ async function handleFaceletsEvent(event: GanCubeEvent) {
 
 function handleCubeEvent(event: GanCubeEvent) {
   if (!event) return;
+
   if (event.type === "GYRO") handleGyroEvent(event);
   else if (event.type === "MOVE") handleMoveEvent(event);
   else if (event.type === "FACELETS") handleFaceletsEvent(event);
@@ -170,9 +141,10 @@ function handleCubeEvent(event: GanCubeEvent) {
 // ------------------------------------------------------------
 // MAC Handler
 // ------------------------------------------------------------
-const customMacAddressProvider: MacAddressProvider = async (_device, isFallbackCall) => {
+const customMacAddressProvider: MacAddressProvider = async (device, isFallbackCall) => {
   const saved = localStorage.getItem("gan_cube_mac");
   if (saved && !isFallbackCall) return saved;
+
   const manual = prompt("Please enter your cube’s MAC address:");
   if (manual) {
     localStorage.setItem("gan_cube_mac", manual);
@@ -210,8 +182,8 @@ $("#connect").on("click", async () => {
   await conn.sendCubeCommand({ type: "REQUEST_BATTERY" });
 
   try {
-    // await conn.sendCubeCommand({ type: "REQUEST_GYRO" });
-    // console.log("✅ REQUEST_GYRO sent");
+    await conn.sendCubeCommand({ type: "REQUEST_GYRO" });
+    console.log("✅ REQUEST_GYRO sent");
   } catch {
     console.warn("⚠️ Cube may not require REQUEST_GYRO");
   }
@@ -220,61 +192,9 @@ $("#connect").on("click", async () => {
 });
 
 // ------------------------------------------------------------
-// Timer + Inspection Logic
+// Timer Logic
 // ------------------------------------------------------------
 let timerState: "IDLE" | "READY" | "RUNNING" | "STOPPED" = "IDLE";
-let inspectionState: "NONE" | "INSPECT" | "COUNTDOWN" = "NONE";
-
-function showOverlay(text: string, cssClass: string) {
-  const el = $("#inspect-overlay");
-  el.removeClass().addClass(cssClass).text(text).css("opacity", 1);
-}
-
-function hideOverlay() {
-  $("#inspect-overlay").css("opacity", 0);
-}
-
-function startCountdownAndRunTimer() {
-  inspectionState = "COUNTDOWN";
-  let count = 3;
-  showOverlay(String(count), "countdown");
-
-  const countdownInterval = setInterval(() => {
-    count--;
-    if (count > 0) {
-      showOverlay(String(count), "countdown");
-    } else if (count === 0) {
-      showOverlay("BEGIN!", "begin");
-      setTimeout(() => {
-        hideOverlay();
-        setTimerState("RUNNING");
-      }, 600);
-      clearInterval(countdownInterval);
-    }
-  }, 1000);
-}
-
-function activateTimer() {
-  if (timerState === "IDLE" && inspectionState === "NONE" && conn) {
-    // 🟢 Start inspection phase
-    inspectionState = "INSPECT";
-    showOverlay("INSPECT...", "flash-slow");
-    setTimerState("READY");
-  } else if (inspectionState === "INSPECT") {
-    // 🕒 Move to countdown phase
-    hideOverlay();
-    startCountdownAndRunTimer();
-  } else if (timerState === "RUNNING") {
-    // ⏹ Stop timer
-    setTimerState("STOPPED");
-    inspectionState = "NONE";
-  } else {
-    // 🔁 Reset
-    inspectionState = "NONE";
-    hideOverlay();
-    setTimerState("IDLE");
-  }
-}
 
 function setTimerState(state: typeof timerState) {
   timerState = state;
@@ -328,7 +248,10 @@ function stopLocalTimer() {
   localTimer?.unsubscribe();
   localTimer = null;
 }
-
+function activateTimer() {
+  if (timerState === "IDLE" && conn) setTimerState("READY");
+  else setTimerState("IDLE");
+}
 $(document).on("keydown", (event) => {
   if (event.which === 32) {
     event.preventDefault();
